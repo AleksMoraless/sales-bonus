@@ -47,14 +47,14 @@ function analyzeSalesData(data, options) {
     ) {
         throw new Error('Некорректные входные данные');
     }
-
-    if (!typeof options === "object") {
-        throw new Error('Переданный параметр опций не объект');
-    }
-    const { calculateRevenue, calculateBonus } = options;
+    
     // @TODO: Проверка наличия опций
-    if (!typeof calculateRevenue === "function" || !typeof calculateBonus === "function") {
-        throw new Error('Переданные параметры опций не функции');
+    const { calculateRevenue, calculateBonus } = options;
+    if (!typeof options === "object"
+        || !typeof calculateRevenue === "function" 
+        || !typeof calculateBonus === "function"
+    ) {
+        throw new Error('Неверные параметры');
     }
 
     // @TODO: Подготовка промежуточных данных для сбора статистики
@@ -90,7 +90,7 @@ function analyzeSalesData(data, options) {
             // Посчитать себестоимость (cost) товара как product.purchase_price, умноженную на количество товаров из чека
             const cost = product.purchase_price * item.quantity;
             // Посчитать выручку (revenue) с учётом скидки через функцию calculateSimpleRevenue
-            const rev = calculateSimpleRevenue(item);
+            const rev = calculateRevenue(item);
 
             // Посчитать прибыль: выручка минус себестоимость
             // Увеличить общую накопленную прибыль (profit) у продавца 
@@ -102,7 +102,7 @@ function analyzeSalesData(data, options) {
                         value.products_sold[item.sku] = 0;
                     }
                     // По артикулу товара увеличить его проданное количество у продавца
-                    value.products_sold[item.sku]++;
+                    value.products_sold[item.sku] += item.quantity;
                 }
             })
         });
@@ -113,7 +113,7 @@ function analyzeSalesData(data, options) {
 
     // @TODO: Назначение премий на основе ранжирования
     sellerStats.forEach((seller, index, arr) => {
-        seller.bonus = calculateBonusByProfit(index, arr.length, seller);// Считаем бонус
+        seller.bonus = calculateBonus(index, arr.length, seller);// Считаем бонус
         seller.top_products = Object.entries(seller.products_sold)
         .sort((a, b) => b[1] - a[1])
         .filter((item, index) => index < 10)
